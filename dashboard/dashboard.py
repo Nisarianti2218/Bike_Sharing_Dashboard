@@ -8,7 +8,7 @@ import os
 # Konfigurasi tampilan Seaborn
 sns.set_theme(style="whitegrid")
 
-# Pastikan `main_data.csv` dibaca dari folder yang sama dengan `dashboard.py`
+# Pastikan file `main_data.csv` dibaca dari folder yang sama
 file_path = os.path.join(os.path.dirname(__file__), "main_data.csv")
 
 # === Pengecekan File === #
@@ -21,8 +21,8 @@ if not os.path.exists(file_path):
 def load_data(file_path):
     try:
         df = pd.read_csv(file_path)
-        df['dteday'] = pd.to_datetime(df['dteday'])  # Konversi ke tipe datetime
-        return df
+        df['dteday'] = pd.to_datetime(df['dteday'], errors='coerce')  # Konversi ke datetime
+        return df.dropna(subset=['dteday'])  # Hapus baris dengan tanggal kosong
     except Exception as e:
         st.error(f"❌ Terjadi kesalahan saat membaca file CSV: {e}")
         st.stop()
@@ -38,10 +38,14 @@ day_df['season_name'] = day_df['season'].map(season_map)
 st.title('🚴 Bike Sharing Dashboard')
 
 # === Sidebar untuk Filter Musim === #
-selected_season = st.sidebar.selectbox("🔍 Pilih Musim:", day_df['season_name'].unique())
+season_options = ['Semua Musim'] + list(day_df['season_name'].unique())
+selected_season = st.sidebar.selectbox("🔍 Pilih Musim:", season_options)
 
 # Filter Data berdasarkan musim
-filtered_df = day_df[day_df['season_name'] == selected_season].copy()
+if selected_season == "Semua Musim":
+    filtered_df = day_df.copy()
+else:
+    filtered_df = day_df[day_df['season_name'] == selected_season].copy()
 
 # === Visualisasi Tren Peminjaman === #
 st.subheader(f'📊 Tren Peminjaman Sepeda - {selected_season}')
@@ -49,17 +53,17 @@ fig, ax = plt.subplots(figsize=(10, 5))
 sns.lineplot(x='dteday', y='cnt', data=filtered_df, ax=ax, marker='o', color='blue')
 ax.set_xlabel('Tanggal', fontsize=12)
 ax.set_ylabel('Total Peminjaman Sepeda', fontsize=12)
-ax.set_title(f'Tren Peminjaman Sepeda selama Musim {selected_season}', fontsize=14)
+ax.set_title(f'Tren Peminjaman Sepeda selama {selected_season}', fontsize=14)
 plt.xticks(rotation=45)
 st.pyplot(fig)
 
-# === Visualisasi Pengaruh Cuaca terhadap Peminjaman === #
+# === Visualisasi Pengaruh Cuaca terhadap Peminjaman (Tanpa Box Plot) === #
 st.subheader('🌦 Pengaruh Cuaca terhadap Peminjaman Sepeda')
 fig, ax = plt.subplots(figsize=(8, 5))
-sns.boxplot(x='weathersit', y='cnt', data=filtered_df, ax=ax, palette='Set2')
+sns.barplot(x='weathersit', y='cnt', data=filtered_df, estimator=np.mean, ax=ax, palette='Set2')
 ax.set_xlabel('Kondisi Cuaca (1=Cerah, 2=Berawan, 3=Hujan)', fontsize=12)
-ax.set_ylabel('Total Peminjaman Sepeda', fontsize=12)
-ax.set_title('Distribusi Peminjaman Sepeda Berdasarkan Cuaca', fontsize=14)
+ax.set_ylabel('Rata-rata Peminjaman Sepeda', fontsize=12)
+ax.set_title('Rata-rata Peminjaman Sepeda Berdasarkan Cuaca', fontsize=14)
 st.pyplot(fig)
 
 # === Visualisasi Peminjaman Berdasarkan Hari === #
