@@ -34,6 +34,10 @@ day_df = load_data(file_path)
 season_map = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
 day_df['season_name'] = day_df['season'].map(season_map)
 
+# Mapping weekday agar berurutan dengan benar
+weekday_map = {0: 'Sen', 1: 'Sel', 2: 'Rab', 3: 'Kam', 4: 'Jum', 5: 'Sab', 6: 'Min'}
+day_df['weekday_name'] = day_df['weekday'].map(weekday_map)
+
 # === Header Aplikasi === #
 st.title('🚴 Bike Sharing Dashboard')
 
@@ -57,7 +61,7 @@ ax.set_title(f'Tren Peminjaman Sepeda selama {selected_season}', fontsize=14)
 plt.xticks(rotation=45)
 st.pyplot(fig)
 
-# === Visualisasi Pengaruh Cuaca terhadap Peminjaman (Tanpa Box Plot) === #
+# === Visualisasi Pengaruh Cuaca terhadap Peminjaman === #
 st.subheader('🌦 Pengaruh Cuaca terhadap Peminjaman Sepeda')
 fig, ax = plt.subplots(figsize=(8, 5))
 sns.barplot(x='weathersit', y='cnt', data=filtered_df, estimator=np.mean, ax=ax, palette='Set2')
@@ -67,10 +71,19 @@ ax.set_title('Rata-rata Peminjaman Sepeda Berdasarkan Cuaca', fontsize=14)
 st.pyplot(fig)
 
 # === Visualisasi Peminjaman Berdasarkan Hari === #
-st.subheader('📅 Rata-rata Peminjaman Sepeda Berdasarkan Hari dalam Seminggu')
+st.subheader('🗓 Rata-rata Peminjaman Sepeda Berdasarkan Hari dalam Seminggu')
+
+# Hitung rata-rata peminjaman per hari dan urutkan
+weekday_avg = filtered_df.groupby('weekday_name')['cnt'].mean().reindex(['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'])
+
+# Buat skala warna berdasarkan ranking nilai rata-rata
+rank = weekday_avg.rank(method="first")  # Ranking dari yang terkecil ke terbesar
+colors = sns.color_palette("Reds", len(weekday_avg))  # Palet warna dari terang ke gelap
+rank_colors = [colors[int(r)-1] for r in rank]  # Ambil warna sesuai ranking
+
 fig, ax = plt.subplots(figsize=(8, 5))
-sns.barplot(x='weekday', y='cnt', data=filtered_df, estimator=np.mean, ax=ax, palette='pastel')
-ax.set_xlabel('Hari dalam Seminggu (0=Senin, 6=Minggu)', fontsize=12)
+sns.barplot(x=weekday_avg.index, y=weekday_avg.values, ax=ax, palette=rank_colors)
+ax.set_xlabel('Hari dalam Seminggu', fontsize=12)
 ax.set_ylabel('Rata-rata Peminjaman Sepeda', fontsize=12)
 ax.set_title('Rata-rata Peminjaman Sepeda per Hari', fontsize=14)
 st.pyplot(fig)
