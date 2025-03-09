@@ -1,4 +1,2 @@
   Local URL: http://localhost:8501
   Network URL: http://192.168.1.19:8501
-
-https://bikesharingdashboard-3lgtvrtemx57vsouv8sshm.streamlit.app/
